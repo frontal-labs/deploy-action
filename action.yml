@@ -1,0 +1,56 @@
+name: Frontal Apply
+description: Deploy to a preview branch or production environment from your GitHub Action.
+author: Frontal
+branding:
+  icon: square
+  color: gray-dark
+inputs:
+  client-id:
+    description: 'The client ID to use for requests to Frontal.'
+    required: true
+  client-secret:
+    description: 'The client secret to use for requests to Frontal.'
+    required: true
+  branch:
+    description: "If deploying to a branch, the name of the branch to use."
+    required: false
+  no-promote:
+    description: 'By default, Frontal will deploy to your production environment. With no-promote, your pipelines will deploy to a preview environment.'
+    default: "false"
+    required: false
+  await:
+    description: 'Should this step block until it completes?'
+    default: "true"
+    required: false
+  version:
+    description: 'Version of the Frontal CLI to install. If unspecified or set to "latest", the latest version for the target platform will be installed.'
+    default: latest
+    required: false
+  environment:
+    description: 'The Frontal environment to use.'
+    required: false
+  api-host:
+    description: "If you're using a self-hosted deployment, the API host where Frontal is hosted."
+    required: false
+runs:
+  using: composite
+  steps:
+    - uses: frontal-labs/cli-action@v2
+      with:
+        version: ${{ inputs.version }}
+        environment: ${{ inputs.environment }}
+        client-id: ${{ inputs.client-id }}
+        client-secret: ${{ inputs.client-secret }}
+        api-host: ${{ inputs.api-host }}
+    - run: frontal apply --force --no-promote=${{ inputs.no-promote }} --await=${{ inputs.await }} --branch=${{ inputs.branch }} --no-spinners
+      shell: bash
+      id: frontal-apply
+    - name: github output 
+      env: 
+        DEPLOYMENT_ID: ${{ steps.frontal-apply.outputs.deployment_id }}
+      run: echo "deployment_id is $DEPLOYMENT_ID"
+      shell: bash
+outputs:
+  deployment_id: 
+    description: 'The deployment ID.'
+    value: ${{ steps.frontal-apply.outputs.deployment_id }} 
